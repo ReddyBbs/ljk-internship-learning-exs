@@ -243,7 +243,7 @@ def main():
     axes[0].set_title(r"$i = 1$")
     axes[1].set_title(r"$i = 2$")
 
-    for lamb in [4., 3.5, 3., 2.5, 2., 1.5, 1., .5]:
+    for lamb in [3., 2.5, 2.164, 2., 1.5, 1., .5, .25]:
         u_1_mult = np.zeros((nb_iter + 1, N1 + 1))
         u_2_mult = np.zeros((nb_iter + 1, N2 + 1))
 

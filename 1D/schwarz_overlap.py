@@ -59,15 +59,15 @@ def main():
     x1_arr = np.linspace(a, x1, N1 + 1, endpoint=True)
     x2_arr = np.linspace(x2, b, N2 + 1, endpoint=True)
 
-    nb_iter = 51
+    nb_iter = 50
 
-    u_1_mult = np.zeros((nb_iter, N1 + 1))
-    u_2_mult = np.zeros((nb_iter, N2 + 1))
+    u_1_mult = np.zeros((nb_iter + 1, N1 + 1))
+    u_2_mult = np.zeros((nb_iter + 1, N2 + 1))
 
     u_1_x2 = 0
     u_2_x1 = 0
 
-    for i in range(nb_iter):
+    for i in range(1, nb_iter + 1):
         A_1 = A_h(alpha, h, N1)
         F_1 = RHS(u_a, u_2_x1, x1_arr, f)
         u_1_mult[i] = np.linalg.solve(A_1, F_1)
@@ -78,13 +78,13 @@ def main():
         u_2_mult[i] = np.linalg.solve(A_2, F_2)
         u_2_x1 = u_2_mult[i, N1 - N + N2]
 
-    u_1_add = np.zeros((nb_iter, N1 + 1))
-    u_2_add = np.zeros((nb_iter, N2 + 1))
+    u_1_add = np.zeros((nb_iter + 1, N1 + 1))
+    u_2_add = np.zeros((nb_iter + 1, N2 + 1))
 
     u_1_x2 = 0
     u_2_x1 = 0
 
-    for i in range(nb_iter):
+    for i in range(1, nb_iter + 1):
         A_1 = A_h(alpha, h, N1)
         F_1 = RHS(u_a, u_2_x1, x1_arr, f)
         u_1_add[i] = np.linalg.solve(A_1, F_1)
@@ -136,7 +136,7 @@ def main():
     fig, axes = plt.subplots(2, 1, figsize=(6.4, 9.6), sharex=True)
 
     fig.suptitle(
-        r"$\| u_i^k - u_i^{k-1} \|_\infty$"
+        r"$\| u_i^{k+1} - u_i^k \|_\infty$"
         + f"\n $x_1 = {x1} , x_2 = {x2}$\n"
         + f"$N_1 = {N1} ; N_2 = {N2}$ ; {N1 + N2 - N} overlap points"
     )
@@ -146,35 +146,35 @@ def main():
     axes[1].set_title(r"$i = 2$")
 
     axes[0].plot(
-        range(1, nb_iter),
-        [err_inf(u_1_add[i], u_1_add[i - 1]) for i in range(1, nb_iter)],
+        range(0, nb_iter),
+        [err_inf(u_1_add[i + 1], u_1_add[i]) for i in range(0, nb_iter)],
         ls="--",
         marker="+",
         label="Additive method",
     )
     axes[1].plot(
-        range(1, nb_iter),
-        [err_inf(u_2_add[i], u_2_add[i - 1]) for i in range(1, nb_iter)],
+        range(0, nb_iter),
+        [err_inf(u_2_add[i + 1], u_2_add[i]) for i in range(0, nb_iter)],
         ls="--",
         marker="+",
         label="Additive method",
     )
     axes[0].plot(
-        range(1, nb_iter),
-        [err_inf(u_1_mult[i], u_1_mult[i - 1]) for i in range(1, nb_iter)],
+        range(0, nb_iter),
+        [err_inf(u_1_mult[i + 1], u_1_mult[i]) for i in range(0, nb_iter)],
         ls="--",
         marker="+",
         label="Multiplicative method",
     )
     axes[1].plot(
-        range(1, nb_iter),
-        [err_inf(u_2_mult[i], u_2_mult[i - 1]) for i in range(1, nb_iter)],
+        range(0, nb_iter),
+        [err_inf(u_2_mult[i + 1], u_2_mult[i]) for i in range(0, nb_iter)],
         ls="--",
         marker="+",
         label="Multiplicative method",
     )
 
-    axes[1].set_xticks(range(0, nb_iter, 5))
+    axes[1].set_xticks(range(0, nb_iter+1, 5))
 
     axes[0].set_yscale("log")
     axes[1].set_yscale("log")
@@ -204,35 +204,35 @@ def main():
     axes[1].set_title(r"$i = 2$")
 
     axes[0].plot(
-        range(nb_iter),
-        [err_inf(u_1_add[i], u_1_ex) for i in range(nb_iter)],
+        range(nb_iter+1),
+        [err_inf(u_1_add[i], u_1_ex) for i in range(nb_iter+1)],
         ls="--",
         marker="+",
         label="Additive method",
     )
     axes[1].plot(
-        range(nb_iter),
-        [err_inf(u_2_add[i], u_2_ex) for i in range(nb_iter)],
+        range(nb_iter+1),
+        [err_inf(u_2_add[i], u_2_ex) for i in range(nb_iter+1)],
         ls="--",
         marker="+",
         label="Additive method",
     )
     axes[0].plot(
-        range(nb_iter),
-        [err_inf(u_1_mult[i], u_1_ex) for i in range(nb_iter)],
+        range(nb_iter+1),
+        [err_inf(u_1_mult[i], u_1_ex) for i in range(nb_iter+1)],
         ls="--",
         marker="+",
         label="Multiplicative method",
     )
     axes[1].plot(
-        range(nb_iter),
-        [err_inf(u_2_mult[i], u_2_ex) for i in range(nb_iter)],
+        range(nb_iter+1),
+        [err_inf(u_2_mult[i], u_2_ex) for i in range(nb_iter+1)],
         ls="--",
         marker="+",
         label="Multiplicative method",
     )
 
-    axes[1].set_xticks(range(0, nb_iter, 5))
+    axes[1].set_xticks(range(0, nb_iter+1, 5))
 
     axes[0].set_yscale("log")
     axes[1].set_yscale("log")
