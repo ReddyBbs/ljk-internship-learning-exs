@@ -1,5 +1,6 @@
 import numpy as np
-import scipy as sp
+import scipy.sparse as sp
+import scipy.linalg as lg
 
 def A_mat(dx: float, N: int, nu: float = 1., a: float = 1., c: float = .1):
     a0 = nu/dx**2 + c/2
@@ -28,11 +29,37 @@ def A_mat(dx: float, N: int, nu: float = 1., a: float = 1., c: float = .1):
             ]
             )
 
-    A = sp.sparse.diags_array([diag0, diag1, diagm1], offsets=[0,1,-1])
+    A = sp.diags_array([diag0, diag1, diagm1], offsets=[0,1,-1])
 
     return A.tocsr()
 
-def time_stepper(Un, A, dt, N):
-    In = sp.sparse.eye_array(N+1).tocsr()
+def f(x, t, left, right):
+    F = 0 * x
+    F[0] = left
+    F[-1] = right
+    return F
 
-    Unp1 = sp.linalg.solve()
+def time_stepper(Un, A, Fn, Fnp1, dt, Nx):
+    In = sp.eye_array(Nx+1).tocsr()
+
+    LHS = A + In/dt
+    LHS[0,0] = 1
+    LHS[-1,-1] = 1
+
+    RHS = In/dt - A
+    RHS[0,0] = 0
+    RHS[-1,-1] = 0
+
+    Unp1 = lg.solve(LHS, RHS@Un + (Fn + Fnp1)/2)
+
+    return Unp1
+
+def schwarz_stepper(U1, U2, A, f, x, dt, Nx, Nov, Nt, U1toU2):
+    for n in range(Nt):
+        if U1toU2:
+            U2[n+1] = time_stepper(U2[n], A, f(x, n*dt, U1[n+1, -Nov], 0), f(x, (n+1)*dt, U1[n+1, -Nov], 0), dt, Nx)
+        else:
+            U1[n+1] = time_stepper(U1[n], A, f(x, n*dt, 0, U2[n+1, -Nov]), f(x, (n+1)*dt, 0, U2[n+1, -Nov]), dt, Nx)
+    return
+
+
