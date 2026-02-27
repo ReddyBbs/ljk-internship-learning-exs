@@ -1,0 +1,119 @@
+// Parameters
+func u0 = exp(-x^2);
+real nu = 1.;
+real a = 1.;
+real c = .1;
+
+real T = 10.;
+int Nt = 100;
+real dt = T/Nt;
+
+real L = 5.;
+real H = .1;
+
+real x1 = .1;
+real x2 = 0.;
+
+int niter = 20;
+
+// Mesh
+int lower = 1;
+int right = 2;
+int upper = 3;
+int left = 4;
+
+int lower1 = 5;
+int gamma12 = 6;
+int upper1 = 7;
+
+int lower2 = 8;
+int gamma21 = 9;
+int upper2 = 10;
+
+border Clow(t=0,1){x = L*(2.*t - 1.); y = 0.; label=lower;}
+border Cright(t=0,1){x = L; y = H*t; label=right;}
+border Cup(t=0,1){x = -L*(2.*t - 1.); y = H; label=upper;}
+border Cleft(t=0,1){x = -L; y = H*(1-t); label=left;}
+
+border Clow1(t=0,1){x = x1*t - L*(1-t); y = 0.; label=lower1;}
+border C12(t=0,1){x = x1; y = H*t; label=gamma12;}
+border Cup1(t=0,1){x = -L*t + x1*(1-t); y = H; label=upper1;}
+
+border Clow2(t=0,1){x = L*t + x2*(1-t); y = 0.; label=lower2;}
+border Cup2(t=0,1){x = x2*t + L*(1-t); y = H; label=upper2;}
+border C21(t=0,1){x = x2; y = H*(1-t); label=gamma21;}
+
+int Nx = 30;
+mesh Th = buildmesh(Clow(Nx) + Cright(2) + Cup(Nx) + Cleft(2));
+mesh Th1 = buildmesh(Clow1(Nx) + C12(2) + Cup1(Nx) + Cleft(2));
+mesh Th2 = buildmesh(Clow2(Nx) + Cright(2) + Cup2(Nx) + C21(2));
+
+// Fespace
+fespace Vh(Th, P1);
+Vh u=u0, v, uold;
+
+fespace Vh1(Th1, P1);
+Vh1 u1, v1, uold1;
+Vh1[int] uu1(Nt+1);
+
+fespace Vh2(Th2, P1);
+Vh2 u2, v2, uold2;
+Vh2[int] uu2(Nt+1);
+
+// Problem
+problem parabolic(u, v)
+    = int2d(Th)(
+      (c/2. + 1./dt)*u*v + (nu/2.)*dx(u)*dx(v) + (a/2.)*dx(u)*v
+    )
+    + int2d(Th)(
+      (c/2. - 1./dt)*uold*v + (nu/2.)*dx(uold)*dx(v) + (a/2.)*dx(uold)*v
+    )
+    + on(right, left, u=0)
+    ;
+
+problem p1(u1, v1)
+    = int2d(Th1)(
+      (c/2. + 1./dt)*u1*v1 + (nu/2.)*dx(u1)*dx(v1) + (a/2.)*dx(u1)*v1
+    )
+    + int2d(Th1)(
+      (c/2. - 1./dt)*uold1*v1 + (nu/2.)*dx(uold1)*dx(v1) + (a/2.)*dx(uold1)*v1
+    )
+    + on(left, u1=0)
+    + on(gamma12, u1=u2)
+    ;
+
+problem p2(u2, v2)
+    = int2d(Th2)(
+      (c/2. + 1./dt)*u2*v2 + (nu/2.)*dx(u2)*dx(v2) + (a/2.)*dx(u2)*v2
+    )
+    + int2d(Th2)(
+      (c/2. - 1./dt)*uold2*v2 + (nu/2.)*dx(uold2)*dx(v2) + (a/2.)*dx(uold2)*v2
+    )
+    + on(right, u2=0)
+    + on(gamma21, u2=u1)
+    ;
+
+// Schwarz algorithm
+for (int k = 0; k < niter + 1; k++){
+  u1=u0;
+  u2=u0;
+  uu1[0] = u0;
+  uu2[0] = u0;
+  for (int it=1; it < Nt + 1; it++){
+    uold1 = u1;
+    u2 = uu2[it];
+    p1;
+    uu1[it] = u1;
+  }
+  for (int it=1; it < Nt + 1; it++){
+    uold2 = u2;
+    u1 = uu1[it];
+    p2;
+    uu2[it] = u2;
+  }
+}
+
+for (int it=0; it < Nt + 1; it++){
+  plot(uu1[it], uu2[it], dim=3, fill=true, aspectratio=true);
+}
+
