@@ -1,0 +1,45 @@
+// Parameters
+real kappa = 1.;
+
+func F2 = 0*x*y;
+func u2d = 0*x*y;
+
+real lambda = 1.;
+
+// Mesh
+real L1 = 3.;
+real L2 = 2.;
+real Ly = .5;
+real H = 1.;
+
+mesh Th2 = square(10, 10, [L1*(x-1.), Ly*y]);
+mesh3 Th3 = cube(10, 10, 10, [L2*x, Ly*y, H*z]);
+plot(Th2, Th3);
+
+// Fespace
+fespace Vh2(Th2, P1);
+Vh2 u2, v2;
+
+fespace Vh3(Th3, P1);
+Vh3 u3, v3;
+
+// Macros
+macro grad2(u) [dx(u), dy(u)] //
+macro grad3(u) [dx(u), dy(u), dz(u)] //
+
+// Problem
+problem 2d(u2, v2)
+  = int2d(Th2)(
+    grad2(u2)' * grad2(v2) + (kappa/H)*u2*v2
+  )
+  - int2d(Th2)(
+    F2*v2
+  )
+  + int1d(Th2, 2)(
+    lambda*u2*v2
+  )
+  - int1d(Th2, 2)(
+    dx(u3bar)*v2 + lambda*u3bar*v2
+  )
+  + on(1,3,4, u2=u2d)
+  ;

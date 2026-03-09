@@ -5,16 +5,20 @@ real a = 1.;
 real c = .1;
 
 real T = 10.;
-int Nt = 100;
+int Nt = 300;
 real dt = T/Nt;
 
 real L = 5.;
 real H = .1;
 
-real x1 = .1;
+real x1 = 0.;
 real x2 = 0.;
 
 int niter = 20;
+
+real p = 2.;
+real lambda1 = (a-p)/(2*nu);
+real lambda2 = (a+p)/(2*nu);
 
 // Mesh
 int lower = 1;
@@ -43,7 +47,7 @@ border Clow2(t=0,1){x = L*t + x2*(1-t); y = 0.; label=lower2;}
 border Cup2(t=0,1){x = x2*t + L*(1-t); y = H; label=upper2;}
 border C21(t=0,1){x = x2; y = H*(1-t); label=gamma21;}
 
-int Nx = 30;
+int Nx = 70;
 mesh Th = buildmesh(Clow(Nx) + Cright(2) + Cup(Nx) + Cleft(2));
 mesh Th1 = buildmesh(Clow1(Nx) + C12(2) + Cup1(Nx) + Cleft(2));
 mesh Th2 = buildmesh(Clow2(Nx) + Cright(2) + Cup2(Nx) + C21(2));
@@ -78,8 +82,19 @@ problem p1(u1, v1)
     + int2d(Th1)(
       (c/2. - 1./dt)*uold1*v1 + (nu/2.)*dx(uold1)*dx(v1) + (a/2.)*dx(uold1)*v1
     )
+    - int1d(Th1, gamma12)(
+      (nu/2.)*lambda1*u1*v1
+    )
+    - int1d(Th1, gamma12)(
+      (nu/2.)*dx(u2)*v1 - (nu/2.)*lambda1*u2*v1
+    )
+    - int1d(Th1, gamma12)(
+      (nu/2.)*lambda1*uold1*v1
+    )
+    - int1d(Th1, gamma12)(
+      (nu/2.)*dx(uold2)*v1 + (nu/2.)*lambda1*uold2*v1
+    )
     + on(left, u1=0)
-    + on(gamma12, u1=u2)
     ;
 
 problem p2(u2, v2)
@@ -89,8 +104,19 @@ problem p2(u2, v2)
     + int2d(Th2)(
       (c/2. - 1./dt)*uold2*v2 + (nu/2.)*dx(uold2)*dx(v2) + (a/2.)*dx(uold2)*v2
     )
+    + int1d(Th2, gamma21)(
+      (nu/2.)*lambda2*u2*v2
+    )
+    + int1d(Th2, gamma21)(
+      (nu/2.)*dx(u1)*v2 - (nu/2.)*lambda2*u1*v2
+    )
+    + int1d(Th2, gamma21)(
+      (nu/2.)*lambda2*uold2*v2
+    )
+    + int1d(Th2, gamma21)(
+      (nu/2.)*dx(uold1)*v2 - (nu/2.)*lambda2*uold1*v2
+    )
     + on(right, u2=0)
-    + on(gamma21, u2=u1)
     ;
 
 // Schwarz algorithm
@@ -101,12 +127,14 @@ for (int k = 0; k < niter + 1; k++){
   uu2[0] = u0;
   for (int it=1; it < Nt + 1; it++){
     uold1 = u1;
+    uold2 = uu2[it-1];
     u2 = uu2[it];
     p1;
     uu1[it] = u1;
   }
   for (int it=1; it < Nt + 1; it++){
     uold2 = u2;
+    uold1 = uu1[it-1];
     u1 = uu1[it];
     p2;
     uu2[it] = u2;

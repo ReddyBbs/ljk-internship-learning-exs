@@ -1,0 +1,85 @@
+// Parameters
+func f = 2*pi^2*sin(pi*x)*sin(pi*y);
+
+real x1 = .51;
+real x2 = .5;
+
+// Mesh
+int outer = 0;
+int outer1 = 1;
+int outer2 = 2;
+int gamma1 = 3;
+int gamma2 = 4;
+
+border Clo(t=0,1){x = t; y = 0.; label = outer;}
+border Cri(t=0,1){x = 1.; y = t; label = outer;}
+border Cup(t=0,1){x = 1.-t; y = 1.; label = outer;}
+border Cle(t=0,1){x = 0.; y = 1.-t; label = outer;}
+
+border Clo1(t=0,1){x = x1*t; y = 0.; label = outer1;}
+border Cri1(t=0,1){x = x1; y = t; label = gamma1;}
+border Cup1(t=0,1){x = x1*(1.-t); y = 1.; label = outer1;}
+border Cle1(t=0,1){x = 0.; y = 1.-t; label = outer1;}
+
+border Clo2(t=0,1){x = x2 + (1.-x2)*t; y = 0.; label = outer2;}
+border Cri2(t=0,1){x = 1.; y = t; label = outer2;}
+border Cup2(t=0,1){x = x2*t+1.-t; y = 1.; label = outer2;}
+border Cle2(t=0,1){x = x2; y = 1.-t; label = gamma2;}
+
+
+int N = 30;
+mesh Th = buildmesh(Clo(N) + Cri(N) + Cup(N) + Cle(N));
+mesh Th1 = buildmesh(Clo1(N) + Cri1(N) + Cup1(N) + Cle1(N));
+mesh Th2 = buildmesh(Clo2(N) + Cri2(N) + Cup2(N) + Cle2(N));
+
+// Fespace
+fespace Vh(Th, P1);
+Vh u, v;
+
+fespace Vh1(Th1, P1);
+Vh1 u1, v1;
+
+fespace Vh2(Th2, P1);
+Vh2 u2, v2;
+
+// Problems
+problem laplacian(u, v)
+  = int2d(Th)(
+    dx(u)*dx(v) + dy(u)*dy(v)
+  )
+  - int2d(Th)(
+    f*v
+  )
+  + on(outer, u=0)
+  ;
+
+problem laplacian1(u1, v1)
+  = int2d(Th1)(
+    dx(u1)*dx(v1) + dy(u1)*dy(v1)
+  )
+  - int2d(Th1)(
+    f*v1
+  )
+  + on(outer1, u1=0)
+  + on(gamma1, u1=u2)
+  ;
+
+problem laplacian2(u2, v2)
+  = int2d(Th2)(
+    dx(u2)*dx(v2) + dy(u2)*dy(v2)
+  )
+  - int2d(Th2)(
+    f*v2
+  )
+  + on(outer2, u2=0)
+  + on(gamma2, u2=u1)
+  ;
+
+// Schwarz algorithms
+int niter = 20;
+
+for (int k = 0; k <= niter; k++){
+    laplacian1;
+    laplacian2;
+}
+plot(u1, u2, dim=3, fill=true);
